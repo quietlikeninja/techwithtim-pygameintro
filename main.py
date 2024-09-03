@@ -23,19 +23,53 @@ BORDER = pygame.Rect(SCREEN_WIDTH//2-5, 0, 10, SCREEN_HEIGHT)
 BULLET_HIT_SOUND = pygame.mixer.Sound(os.path.join('Assets', 'Grenade+1.mp3'))
 BULLET_FIRE_SOUND = pygame.mixer.Sound(os.path.join('Assets', 'Gun+Silencer.mp3'))
 
+YELLOW_HIT = pygame.USEREVENT + 1
+RED_HIT = pygame.USEREVENT + 2
+
 HEALTH_FONT = pygame.font.SysFont('comicsans', 40)
 WINNER_FONT = pygame.font.SysFont('comicsans', 100)
 
+#load spaceship images
 SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 60, 40
 YELLOW_SPACESHIP_IMAGE = pygame.image.load(os.path.join('Assets', 'spaceship_yellow.png'))
 YELLOW_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(YELLOW_SPACESHIP_IMAGE,(SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 90)
 RED_SPACESHIP_IMAGE = pygame.image.load(os.path.join('Assets', 'spaceship_red.png'))
 RED_SPACESHIP = pygame.transform.rotate(pygame.transform.scale(RED_SPACESHIP_IMAGE,(SPACESHIP_WIDTH, SPACESHIP_HEIGHT)), 270)
 
-YELLOW_HIT = pygame.USEREVENT + 1
-RED_HIT = pygame.USEREVENT + 2
-
+#load background image
 SPACE = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'space.png')), (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+#load button images
+START_BUTTON_IMAGE = pygame.image.load(os.path.join('Assets', 'start_btn.png')).convert_alpha()
+EXIT_BUTTON_IMAGE = pygame.image.load(os.path.join('Assets', 'exit_btn.png')).convert_alpha()
+
+#button class
+class Button():
+    def __init__(self, x, y, image, scale):
+        width = image.get_width()
+        height = image.get_height()
+        self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.clicked = False
+        
+    def draw(self):
+        action = False
+        #get mouse position
+        mouse_pos = pygame.mouse.get_pos()
+        #check mouse over and clicked conditions
+        if self.rect.collidepoint(mouse_pos):
+             if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
+                  self.clicked = True
+                  action = True
+        
+        if pygame.mouse.get_pressed()[0] == 0:
+             self.clicked = False
+                  
+        WIN.blit(self.image, (self.rect.x, self.rect.y))
+
+        return action
+
 
 #create Explosion class
 class Explosion(pygame.sprite.Sprite):
@@ -128,9 +162,26 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
 
 def draw_winner(text):
     draw_text = WINNER_FONT.render(text, 1, WHITE)
-    WIN.blit(draw_text, (SCREEN_WIDTH//2 - draw_text.get_width()//2, SCREEN_HEIGHT//2 - draw_text.get_height()//2))
-    pygame.display.update()
-    pygame.time.delay(5000)
+    button_scale = 0.5
+    start_button = Button(SCREEN_WIDTH//2 - int(START_BUTTON_IMAGE.get_width() * button_scale) - BORDER.width, SCREEN_HEIGHT//2 + START_BUTTON_IMAGE.get_height(), START_BUTTON_IMAGE, button_scale)
+    exit_button = Button(SCREEN_WIDTH//2 + BORDER.width, SCREEN_HEIGHT//2 + EXIT_BUTTON_IMAGE.get_height(), EXIT_BUTTON_IMAGE, button_scale)
+
+    while True:  # This loop will run until a button is pressed
+        WIN.blit(draw_text, (SCREEN_WIDTH//2 - draw_text.get_width()//2, SCREEN_HEIGHT//2 - draw_text.get_height()//2))
+        
+        if start_button.draw():
+            return 'Start'
+
+        if exit_button.draw():
+            pygame.quit()
+            exit()
+        
+        pygame.display.update()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
 
 def main():
     yellow = pygame.Rect(200, 220, SPACESHIP_HEIGHT, SPACESHIP_WIDTH)
@@ -197,8 +248,11 @@ def main():
         draw_window(red, yellow, yellow_bullets, red_bullets, yellow_health, red_health, explosion_group)
 
         if winner_text != "":
-            draw_winner(winner_text)
-            break
+            button_press = draw_winner(winner_text)
+            if button_press == 'Start':
+                break
+            elif button_press == 'Exit':
+                run = False
 
     main()
 
