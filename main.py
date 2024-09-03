@@ -1,5 +1,8 @@
 import pygame
 import os
+import button
+import explosions
+
 pygame.font.init()
 pygame.mixer.init()
 
@@ -42,63 +45,6 @@ SPACE = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'space.p
 #load button images
 START_BUTTON_IMAGE = pygame.image.load(os.path.join('Assets', 'start_btn.png')).convert_alpha()
 EXIT_BUTTON_IMAGE = pygame.image.load(os.path.join('Assets', 'exit_btn.png')).convert_alpha()
-
-#button class
-class Button():
-    def __init__(self, x, y, image, scale):
-        width = image.get_width()
-        height = image.get_height()
-        self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (x, y)
-        self.clicked = False
-        
-    def draw(self):
-        action = False
-        #get mouse position
-        mouse_pos = pygame.mouse.get_pos()
-        #check mouse over and clicked conditions
-        if self.rect.collidepoint(mouse_pos):
-             if pygame.mouse.get_pressed()[0] == 1 and self.clicked == False:
-                  self.clicked = True
-                  action = True
-        
-        if pygame.mouse.get_pressed()[0] == 0:
-             self.clicked = False
-                  
-        WIN.blit(self.image, (self.rect.x, self.rect.y))
-
-        return action
-
-
-#create Explosion class
-class Explosion(pygame.sprite.Sprite):
-	def __init__(self, x, y):
-		pygame.sprite.Sprite.__init__(self)
-		self.images = []
-		for num in range(1, 6):
-			img = pygame.image.load(os.path.join('Assets', f'exp{num}.png'))
-			img = pygame.transform.scale(img, (50, 50))
-			self.images.append(img)
-		self.index = 0
-		self.image = self.images[self.index]
-		self.rect = self.image.get_rect()
-		self.rect.center = [x, y]
-		self.counter = 0
-
-	def update(self):
-		explosion_speed = 4
-		#update explosion animation
-		self.counter += 1
-
-		if self.counter >= explosion_speed and self.index < len(self.images) - 1:
-			self.counter = 0
-			self.index += 1
-			self.image = self.images[self.index]
-
-		#if the animation is complete, reset animation index
-		if self.index >= len(self.images) - 1 and self.counter >= explosion_speed:
-			self.kill()
 
 def draw_window(red, yellow, yellow_bullets, red_bullets, yellow_health, red_health, explosion_group):
     WIN.blit(SPACE, (0, 0))
@@ -163,16 +109,16 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
 def draw_winner(text):
     draw_text = WINNER_FONT.render(text, 1, WHITE)
     button_scale = 0.5
-    start_button = Button(SCREEN_WIDTH//2 - int(START_BUTTON_IMAGE.get_width() * button_scale) - BORDER.width, SCREEN_HEIGHT//2 + START_BUTTON_IMAGE.get_height(), START_BUTTON_IMAGE, button_scale)
-    exit_button = Button(SCREEN_WIDTH//2 + BORDER.width, SCREEN_HEIGHT//2 + EXIT_BUTTON_IMAGE.get_height(), EXIT_BUTTON_IMAGE, button_scale)
+    start_button = button.Button(SCREEN_WIDTH//2 - int(START_BUTTON_IMAGE.get_width() * button_scale) - BORDER.width, SCREEN_HEIGHT//2 + START_BUTTON_IMAGE.get_height(), START_BUTTON_IMAGE, button_scale)
+    exit_button = button.Button(SCREEN_WIDTH//2 + BORDER.width, SCREEN_HEIGHT//2 + EXIT_BUTTON_IMAGE.get_height(), EXIT_BUTTON_IMAGE, button_scale)
 
     while True:  # This loop will run until a button is pressed
         WIN.blit(draw_text, (SCREEN_WIDTH//2 - draw_text.get_width()//2, SCREEN_HEIGHT//2 - draw_text.get_height()//2))
         
-        if start_button.draw():
+        if start_button.draw(WIN):
             return 'Start'
 
-        if exit_button.draw():
+        if exit_button.draw(WIN):
             pygame.quit()
             exit()
         
@@ -208,7 +154,7 @@ def main():
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
-                explosion = Explosion(pos[0], pos[1])
+                explosion = explosions.Explosion(pos[0], pos[1])
                 explosion_group.add(explosion)
 
             if event.type == pygame.KEYDOWN:
@@ -224,13 +170,13 @@ def main():
         
             if event.type == YELLOW_HIT:
                 yellow_health -= 1
-                explosion = Explosion(event.bullet_hit_x, event.bullet_hit_y)
+                explosion = explosions.Explosion(event.bullet_hit_x, event.bullet_hit_y)
                 explosion_group.add(explosion)
                 BULLET_HIT_SOUND.play()
 
             if event.type == RED_HIT:
                 red_health -= 1
-                explosion = Explosion(event.bullet_hit_x, event.bullet_hit_y)
+                explosion = explosions.Explosion(event.bullet_hit_x, event.bullet_hit_y)
                 explosion_group.add(explosion)
                 BULLET_HIT_SOUND.play()
 
